@@ -1,0 +1,39 @@
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #4f7d63;
+  box-shadow: 0 0 0 4px #e2eee5;
+  animation: pulse 2s infinite;
+}
+.feed-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  border-bottom: 1px solid #e8e9e4;
+}
+.feed-row:last-child,
+.feed-row:nth-last-child(2) {
+  border-bottom: 0;
+}
+.stat-flash {
+  animation: flash 900ms ease-out;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes flash {
+  0% {
+    background: #e2eee5;
+  }
+  100% {
+    background: #fff;
+  }
+}

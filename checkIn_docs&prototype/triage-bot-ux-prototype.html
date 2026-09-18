@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Triage Bot — UX Prototype</title>
+<style>
+  :root{
+    --tg-bg:#e6ebee;
+    --tg-header:#ffffff;
+    --tg-header-border:#dfe3e6;
+    --bot-bubble:#ffffff;
+    --bot-text:#0b0b0c;
+    --accent:#3390ec;
+    --accent-dim:#e8f2fd;
+    --muted:#8b96a1;
+    --frame:#111417;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#f4f1ea;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:32px 16px;
+  }
+  .phone{
+    width:380px;
+    height:760px;
+    background:var(--frame);
+    border-radius:44px;
+    padding:14px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.4);
+  }
+  .screen{
+    width:100%;
+    height:100%;
+    background:var(--tg-bg);
+    border-radius:32px;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+  }
+  .notch{
+    position:absolute;
+    top:0; left:50%; transform:translateX(-50%);
+    width:120px; height:22px;
+    background:var(--frame);
+    border-radius:0 0 14px 14px;
+    z-index:5;
+  }
+  .header{
+    background:var(--tg-header);
+    border-bottom:1px solid var(--tg-header-border);
+    padding:34px 14px 10px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .avatar{
+    width:36px;height:36px;border-radius:50%;
+    background:linear-gradient(135deg,#3390ec,#65b8f5);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:16px;flex-shrink:0;
+  }
+  .header-text{line-height:1.2;}
+  .header-name{font-size:14.5px;font-weight:600;color:#111;}
+  .header-status{font-size:12px;color:var(--muted);}
+  .chat{
+    flex:1;
+    overflow-y:auto;
+    padding:16px 12px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .bubble-row{display:flex;}
+  .bubble{
+    max-width:84%;
+    background:var(--bot-bubble);
+    color:var(--bot-text);
+    padding:10px 12px;
+    border-radius:14px 14px 14px 4px;
+    font-size:14.5px;
+    line-height:1.42;
+    box-shadow:0 1px 1px rgba(0,0,0,.06);
+    white-space:pre-wrap;
+  }
+  .caption{
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .progress{
+    font-family:"SF Mono",Menlo,Consolas,monospace;
+    font-size:12px;
+    letter-spacing:0.5px;
+    color:var(--accent);
+    margin-top:8px;
+  }
+  .kb{
+    display:grid;
+    gap:6px;
+    margin-top:8px;
+  }
+  .kb.grid2{grid-template-columns:1fr 1fr;}
+  .kb.stack{grid-template-columns:1fr;}
+  .kb button{
+    border:1px solid var(--accent);
+    background:var(--accent-dim);
+    color:var(--accent);
+    font-size:13px;
+    font-weight:500;
+    padding:9px 6px;
+    border-radius:9px;
+    cursor:pointer;
+    transition:transform .08s ease, background .15s ease;
+  }
+  .kb button:hover{background:#d9ecfd;}
+  .kb button:active{transform:scale(.96);}
+  .kb button.tel{
+    background:#e9f9ee;
+    border-color:#34a853;
+    color:#1f7a3d;
+    text-align:left;
+  }
+  .fade-in{animation:fade .22s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+  .footer{
+    padding:10px 14px 16px;
+    text-align:center;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .restart{
+    position:absolute;
+    top:10px; right:14px;
+    font-size:11px;
+    color:var(--accent);
+    background:none;border:none;cursor:pointer;
+    z-index:6;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="screen">
+    <div class="notch"></div>
+    <button class="restart" onclick="restart()">↺ restart</button>
+    <div class="header">
+      <div class="avatar">🌱</div>
+      <div class="header-text">
+        <div class="header-name">Wellness Check</div>
+        <div class="header-status">bot</div>
+      </div>
+    </div>
+    <div class="chat" id="chat"></div>
+    <div class="footer">Anonymous · no name or ID stored · 12h session</div>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  "Little interest or pleasure in doing things?",
+  "Feeling down, depressed, or hopeless?",
+  "Trouble falling or staying asleep, or sleeping too much?",
+  "Feeling tired or having little energy?",
+  "Poor appetite or overeating?",
+  "Feeling bad about yourself — or that you are a failure, or have let yourself or your family down?",
+  "Trouble concentrating on things, such as reading or watching TV?",
+  "Moving or speaking so slowly that other people could have noticed — or the opposite, being so fidgety or restless that you've been moving around a lot more than usual?",
+  "Thoughts that you would be better off dead, or of hurting yourself in some way?",
+  "Feeling nervous, anxious, or on edge?",
+  "Not being able to stop or control worrying?",
+  "Worrying too much about different things?",
+  "Trouble relaxing?",
+  "Being so restless that it's hard to sit still?",
+  "Becoming easily annoyed or irritable?",
+  "Feeling afraid, as if something awful might happen?"
+];
+const ANSWERS = [
+  {label:"Not at all", score:0},
+  {label:"Several days", score:1},
+  {label:"More than half", score:2},
+  {label:"Nearly every day", score:3}
+];
+
+let current = 0; // index into QUESTIONS, 0-based
+let scores = [];
+
+function progressBar(n, total=16){
+  const filled = Math.round((n/total)*16);
+  return "▓".repeat(filled) + "░".repeat(16-filled) + `  ${n}/${total}`;
+}
+
+function render(){
+  const chat = document.getElementById('chat');
+  chat.innerHTML = "";
+  const row = document.createElement('div');
+  row.className = "bubble-row";
+  const bubble = document.createElement('div');
+  bubble.className = "bubble fade-in";
+
+  if (current >= QUESTIONS.length){
+    renderOutcome(bubble);
+  } else {
+    let text = "";
+    if (current === 0){
+      text += "Quick, anonymous check-in. 4 taps a question, 16 total.\n\nOver the last 2 weeks, how often have you been bothered by —\n\n";
+    }
+    if (current === 9){
+      text += "Nice — 9 down, 7 to go.\n\n";
+    }
+    text += QUESTIONS[current];
+    bubble.innerHTML = escapeHtml(text) + `<div class="progress">${progressBar(current+1)}</div>`;
+
+    const kb = document.createElement('div');
+    kb.className = "kb grid2";
+    ANSWERS.forEach(a=>{
+      const btn = document.createElement('button');
+      btn.textContent = a.label;
+      btn.onclick = ()=>answer(a.score);
+      kb.appendChild(btn);
+    });
+    bubble.appendChild(kb);
+  }
+
+  row.appendChild(bubble);
+  chat.appendChild(row);
+}
+
+function answer(score){
+  scores[current] = score;
+  current++;
+  render();
+}
+
+function renderOutcome(bubble){
+  const q9 = scores[8];
+  const total = scores.reduce((a,b)=>a+b,0);
+  const phq9 = scores.slice(0,9).reduce((a,b)=>a+b,0);
+  const gad7 = scores.slice(9,16).reduce((a,b)=>a+b,0);
+  const severe = q9 > 0 || phq9 >= 15 || gad7 >= 15;
+  const moderate = !severe && (phq9 >= 10 || gad7 >= 10);
+
+  if (severe){
+    bubble.innerHTML = escapeHtml(
+      "What you've shared matters, and you don't have to handle this alone. Please reach out now — this is a real team, available right now, and confidential."
+    );
+    const kb = document.createElement('div');
+    kb.className = "kb stack";
+    [
+      "📞 Call SURPIN — MTN",
+      "📞 Call SURPIN — 9mobile",
+      "📞 Call SURPIN — Hausa line"
+    ].forEach(label=>{
+      const btn = document.createElement('button');
+      btn.className = "kb tel";
+      btn.textContent = label;
+      btn.onclick = (e)=>e.preventDefault();
+      kb.appendChild(btn);
+    });
+    bubble.appendChild(kb);
+  } else if (moderate){
+    bubble.innerHTML = escapeHtml(
+      "It sounds like you've been carrying a lot lately. We'd like to connect you with a peer counselor who can talk this through with you. Hang tight — someone will be with you shortly."
+    );
+  } else {
+    bubble.innerHTML = escapeHtml(
+      "Thanks for checking in. Based on your answers, you're not showing signs of serious distress right now — but everyone has rough patches. A few things that can help: better sleep, talking to a friend, campus resources. Check in again anytime."
+    );
+  }
+}
+
+function escapeHtml(str){
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>");
+}
+
+function restart(){
+  current = 0;
+  scores = [];
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
