@@ -8,25 +8,26 @@ import {
 import { Panel } from "./Panel";
 
 interface TierBreakdownProps {
-  tierCounts: DashboardStats["tierCounts"];
+  severity_breakdown: DashboardStats["severity_breakdown"];
+  severity_percent: DashboardStats["severity_percent"];
 }
 
-export function TierBreakdown({ tierCounts }: TierBreakdownProps) {
-  const totalTiers = Object.values(tierCounts).reduce(
-    (sum, value) => sum + value,
-    0,
-  );
-
+export function TierBreakdown({
+  severity_breakdown,
+  severity_percent,
+}: TierBreakdownProps) {
   return (
     <Panel title="Response mix" eyebrow="By triage tier">
       <div className="space-y-6 pt-3">
         {tierOrder.map((tier: Tier) => {
-          const percentage = Math.round((tierCounts[tier] / totalTiers) * 100);
+          const percentage = severity_percent[tier];
           return (
             <div key={tier}>
               <div className="mb-2 flex justify-between text-sm font-bold">
                 <span>{tierMeta[tier].label}</span>
-                <span className={tierTextClasses[tier]}>{percentage}%</span>
+                <span className={tierTextClasses[tier]}>
+                  {severity_breakdown[tier]} ({percentage}%)
+                </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-bg">
                 <div

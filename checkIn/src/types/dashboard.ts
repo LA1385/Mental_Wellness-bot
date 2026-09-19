@@ -19,6 +19,8 @@ export type DashboardStats = {
     moderate: number
     severe: number
   }
+
+  self_harm_override_count: number
 }
 
 export interface DailyStatsRecord {
