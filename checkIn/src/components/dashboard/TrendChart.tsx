@@ -1,9 +1,9 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import type { DailyStats } from '../../types/dashboard'
+import type { DailyStat } from '../../types/dashboard'
 import { Panel } from './Panel'
 
 interface TrendChartProps {
-  daily: DailyStats;
+  daily: DailyStat[];
 }
 
 export function TrendChart({ daily }: TrendChartProps) {

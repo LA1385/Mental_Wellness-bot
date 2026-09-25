@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { DashboardHeader } from './components/dashboard/DashboardHeader';
 import { LiveFeed } from './components/dashboard/LiveFeed';
@@ -7,93 +7,37 @@ import { StatCard } from './components/dashboard/StatCard';
 import { TierBreakdown } from './components/dashboard/TierBreakdown';
 import { TrendChart } from './components/dashboard/TrendChart';
 
-import { getDashboardStats } from './api/getDashboardStats';
-
-import type { DashboardStats, DailyStats } from './types/dashboard';
+import { useDailyTrend, useOverallStats } from './hooks/useDashboardData';
 
 import './App.css';
 
 function App() {
   // 1. State
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [stats, setStats] = useState<DashboardStats>({
-    window: '',
-    total_sessions: 0,
-    completed_sessions: 0,
-    in_progress_sessions: 0,
-    expired_sessions: 0,
-    completion_rate_percent: 0,
-    severity_breakdown: {
-      minimal_mild: 0,
-      moderate: 0,
-      severe: 0,
-    },
-    severity_percent: {
-      minimal_mild: 0,
-      moderate: 0,
-      severe: 0,
-    },
-    self_harm_override_count: 0,
-  });
-
-  const [daily, setDaily] = useState<DailyStats>([]);
+  const overallStats = useOverallStats(7);
+  const dailyTrend = useDailyTrend(7);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [refreshError, setRefreshError] = useState<string | null>(null);
 
-  // 2. Fetch dashboard data
   useEffect(() => {
-    async function loadDashboard(isInitialLoad = false) {
-      try {
-        if (isInitialLoad) {
-          setIsLoading(true);
-        }
-
-        // Fetch data from the API
-        const data = await getDashboardStats();
-
-        // Store the returned data in state
-        setStats(data.stats);
-        setDaily(data.daily);
-
-        // Record when the data was received
-        setLastUpdated(new Date());
-
-        setRefreshError(null); // Clear any previous refresh errors
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Unable to refresh dashboard data';
-
-        if (isInitialLoad) {
-          setError(message);
-        } else {
-          setRefreshError(message);
-        }
-      }
-
-      finally {
-        if (isInitialLoad) {
-          setIsLoading(false);
-        }
-      }
+    if (overallStats.data && dailyTrend.data) {
+      setLastUpdated(new Date());
     }
+  }, [overallStats.data, dailyTrend.data]);
 
-    // Load data when component mounts
-    loadDashboard(true);
-
-    // Refresh data every 12 seconds
-    const intervalId = setInterval(() => {
-      loadDashboard();
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      overallStats.refetch();
+      dailyTrend.refetch();
     }, 12000);
 
-    // Cleanup when component unmounts
     return () => {
-      clearInterval(intervalId);
+      window.clearInterval(intervalId);
     };
-  }, []);
+  }, [overallStats.refetch, dailyTrend.refetch]);
+
+  const isLoading = overallStats.loading || dailyTrend.loading;
+  const error = overallStats.error ?? dailyTrend.error;
+  const stats = overallStats.data;
+  const daily = dailyTrend.data;
 
   // 3. Display loading state
   if (isLoading) {
@@ -107,12 +51,12 @@ function App() {
   }
 
   // 4. Display error state
-  if (error) {
+  if (error || !stats || !daily) {
     return (
       <main className="min-h-screen bg-bg px-5 py-8 text-ink sm:px-8 sm:py-12">
         <div className="mx-auto max-w-[960px]" role="alert">
           Couldn't reach the server.
-          <p>{error}</p>
+          {error && <p>{error.message}</p>}
         </div>
       </main>
     );
@@ -124,12 +68,6 @@ function App() {
       <div className="mx-auto max-w-[960px]">
 
         <DashboardHeader window={stats.window} />
-
-        {refreshError && (
-          <div className="mb-4 rounded-lg bg-red-100 p-3 text-red-700" role="alert">
-            Failed to refresh dashboard: {refreshError}
-          </div>
-        )}
 
         <section
           className="grid gap-4 sm:grid-cols-3"
