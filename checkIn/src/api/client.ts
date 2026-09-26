@@ -1,5 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
-const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_KEY ?? "";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const ADMIN_API_KEY = import.meta.env.VITE_ADMIN_KEY;
 
 // Vite embeds this value in the browser bundle at build time. It is out of source control,
 // but anyone who can access the deployed dashboard can still extract it from the bundle.
@@ -29,6 +29,7 @@ export async function apiFetch<T>(
     headers: {
       Accept: "application/json",
       "X-Admin-Key": ADMIN_API_KEY,
+      "ngrok-skip-browser-warning": "true", // ngrok adds a warning page for browser requests, which breaks the API; this header skips that page
     },
   });
 
